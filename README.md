@@ -55,7 +55,7 @@ python3 -m http.server 8000
 | `sw.js` | オフライン起動用 Service Worker |
 | `manifest.webmanifest`, `icons/` | ホーム画面追加用 |
 
-アプリ本体を更新したときは、`sw.js` の `CACHE` の値（`local-player-v2`）を変更すると、利用者の端末で新しい版に切り替わります。
+アプリ本体を更新したときは、`sw.js` の `CACHE` の値（`local-player-v3`）を変更すると、利用者の端末で新しい版に切り替わります。
 
 ## 動作の仕組み（バックグラウンド再生）
 

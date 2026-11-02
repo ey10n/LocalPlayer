@@ -2,6 +2,8 @@
 
 端末内の MP3 ファイルを再生するブラウザ用プレイヤーです。iPhone（Safari）を優先していますが、Android（Chrome）でも動きます。
 
+**公開 URL：https://ey10n.github.io/LocalPlayer/**
+
 ## 機能
 
 - 端末内の MP3 を選んでライブラリに追加（複数まとめて選択可）。追加した曲はブラウザ内（IndexedDB）に保存されるので、次回からは選び直す必要がありません

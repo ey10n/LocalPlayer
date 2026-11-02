@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Local Player">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#f6f6f8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121216" media="(prefers-color-scheme: dark)">
+  <title>Local Player</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86A1 1 0 0 0 8 5.14z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><rect x="5" y="6" width="2.2" height="12" rx="1"/><path d="M19 6.9v10.2a.9.9 0 0 1-1.4.75L10 12.75a.9.9 0 0 1 0-1.5l7.6-5.1a.9.9 0 0 1 1.4.75z"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><rect x="16.8" y="6" width="2.2" height="12" rx="1"/><path d="M5 6.9v10.2a.9.9 0 0 0 1.4.75l7.6-5.1a.9.9 0 0 0 0-1.5L6.4 6.15A.9.9 0 0 0 5 6.9z"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></symbol>
+  </svg>
+
+  <header class="topbar">
+    <div class="select-wrap">
+      <select id="playlistSelect" aria-label="プレイリスト"></select>
+    </div>
+    <button id="menuBtn" class="icon-btn" aria-label="メニュー"><svg><use href="#i-more"/></svg></button>
+  </header>
+
+  <div class="toolbar">
+    <label class="btn primary file-btn">
+      ＋ MP3を追加
+      <input id="fileInput" type="file" accept=".mp3,audio/mpeg,audio/mp3" multiple>
+    </label>
+    <button id="fromLibraryBtn" class="btn">ライブラリから</button>
+    <span id="countLabel" class="count"></span>
+    <button id="editBtn" class="btn ghost">編集</button>
+  </div>
+
+  <main id="main">
+    <ul id="trackList" class="track-list"></ul>
+    <p id="emptyMsg" class="empty" hidden></p>
+  </main>
+
+  <footer class="player">
+    <audio id="audio" preload="metadata" playsinline></audio>
+    <div class="now">
+      <div id="npArt" class="art"><svg><use href="#i-note"/></svg></div>
+      <div class="now-text">
+        <div id="npTitle" class="now-title">曲が選択されていません</div>
+        <div id="npArtist" class="now-artist"></div>
+      </div>
+    </div>
+    <div class="seek-row">
+      <span id="curTime" class="time">0:00</span>
+      <input id="seek" type="range" min="0" max="0" step="any" value="0" aria-label="再生位置">
+      <span id="durTime" class="time">0:00</span>
+    </div>
+    <div class="controls">
+      <button id="shuffleBtn" class="icon-btn toggle" aria-label="シャッフル"><svg><use href="#i-shuffle"/></svg></button>
+      <button id="prevBtn" class="icon-btn" aria-label="前の曲"><svg><use href="#i-prev"/></svg></button>
+      <button id="playBtn" class="play-btn" aria-label="再生"><svg><use id="playIcon" href="#i-play"/></svg></button>
+      <button id="nextBtn" class="icon-btn" aria-label="次の曲"><svg><use href="#i-next"/></svg></button>
+      <button id="repeatBtn" class="icon-btn toggle" aria-label="リピート"><svg><use href="#i-repeat"/></svg><span class="badge">1</span></button>
+    </div>
+  </footer>
+
+  <dialog id="menuDialog" class="sheet">
+    <form method="dialog">
+      <button value="new" class="sheet-item">新しいプレイリストを作成</button>
+      <button value="rename" class="sheet-item" data-playlist-only>プレイリスト名を変更</button>
+      <button value="delete" class="sheet-item danger" data-playlist-only>このプレイリストを削除</button>
+      <p id="storageInfo" class="note"></p>
+      <button value="" class="sheet-item cancel">閉じる</button>
+    </form>
+  </dialog>
+
+  <dialog id="libraryDialog" class="sheet tall">
+    <form method="dialog">
+      <div class="sheet-head">
+        <h2>ライブラリから追加</h2>
+        <button type="button" id="selectAllBtn" class="btn ghost">すべて選択</button>
+      </div>
+      <ul id="libraryList" class="pick-list"></ul>
+      <div class="sheet-actions">
+        <button value="" class="btn">キャンセル</button>
+        <button value="add" class="btn primary">追加</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

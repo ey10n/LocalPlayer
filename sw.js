@@ -1,6 +1,6 @@
 // アプリ本体をキャッシュしてオフラインでも起動できるようにする
 // （MP3 データは IndexedDB に保存されるため、ここでは扱わない）
-const CACHE = 'local-player-v1';
+const CACHE = 'local-player-v2';
 const ASSETS = [
   './',
   './index.html',

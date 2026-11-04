@@ -1,13 +1,23 @@
 // アプリ本体をキャッシュしてオフラインでも起動できるようにする
 // （MP3 データは IndexedDB に保存されるため、ここでは扱わない）
-const CACHE = 'local-player-v3';
+//
+// 更新方針：
+// - __BUILD__ はデプロイ時にコミットIDへ置き換わる（.github/workflows/pages.yml）。
+//   push のたびにこのファイルの中身が変わるので、ブラウザが新しい版を検出する。
+//   また各ファイルの URL も ?v=<コミットID> で変わるため、古いコピーが使い回されない。
+// - オンライン時は常にサーバーから取得し（ネットワーク優先）、
+//   オフライン・応答が遅いときだけキャッシュを使う。
+// - GitHub Pages は max-age=600 で配信するため、HTTP キャッシュを経由せずサーバーに確認する。
+const BUILD = '__BUILD__';
+const CACHE = `local-player-${BUILD}`;
+const TIMEOUT_MS = 4000;
 const ASSETS = [
   './',
   './index.html',
-  './style.css',
-  './js/app.js',
-  './js/db.js',
-  './js/id3.js',
+  `./style.css?v=${BUILD}`,
+  `./js/app.js?v=${BUILD}`,
+  `./js/db.js?v=${BUILD}`,
+  `./js/id3.js?v=${BUILD}`,
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',
@@ -15,7 +25,11 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then((c) => c.addAll(ASSETS.map((url) => new Request(url, { cache: 'reload' }))))
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener('activate', (e) => {
@@ -26,20 +40,21 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// stale-while-revalidate：キャッシュを即返しつつ裏で更新
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  e.respondWith(
-    caches.open(CACHE).then(async (cache) => {
-      const cached = await cache.match(req, { ignoreSearch: true });
-      const fresh = fetch(req)
-        .then((res) => {
-          if (res.ok) cache.put(req, res.clone());
-          return res;
-        })
-        .catch(() => cached);
-      return cached || fresh;
-    }),
-  );
+  e.respondWith(networkFirst(req));
 });
+
+async function networkFirst(req) {
+  const cache = await caches.open(CACHE);
+  const network = fetch(req, { cache: 'no-cache' }).then((res) => {
+    if (res.ok) cache.put(req, res.clone());
+    return res;
+  });
+  const cached = await cache.match(req, { ignoreSearch: req.mode === 'navigate' });
+  if (!cached) return network;
+  // キャッシュがあるときは、通信できない・遅いときにキャッシュで起動する
+  const timeout = new Promise((resolve) => setTimeout(() => resolve(cached), TIMEOUT_MS));
+  return Promise.race([network.catch(() => cached), timeout]);
+}

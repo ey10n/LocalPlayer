@@ -1,5 +1,8 @@
-import * as db from './db.js';
-import { readTags } from './id3.js';
+import * as db from './db.js?v=__BUILD__';
+import { readTags } from './id3.js?v=__BUILD__';
+
+// GitHub Actions でのデプロイ時にコミットIDへ置き換わる（.github/workflows/pages.yml）
+const BUILD = '__BUILD__';
 
 const LIBRARY = 'library';
 const $ = (sel) => document.querySelector(sel);
@@ -534,10 +537,11 @@ function openMenu() {
   const dlg = $('#menuDialog');
   for (const b of dlg.querySelectorAll('[data-playlist-only]')) b.disabled = state.viewId === LIBRARY;
   const info = $('#storageInfo');
-  info.textContent = '';
+  const version = `バージョン ${BUILD}`;
+  info.textContent = version;
   navigator.storage?.estimate?.().then(({ usage, quota }) => {
     const mb = (n) => (n / 1024 / 1024).toFixed(0);
-    info.textContent = `保存領域：${mb(usage)} MB 使用中（上限の目安 ${mb(quota)} MB）`;
+    info.textContent = `保存領域：${mb(usage)} MB 使用中（上限の目安 ${mb(quota)} MB）\n${version}`;
   }).catch(() => {});
   dlg.returnValue = '';
   dlg.showModal();
@@ -692,6 +696,7 @@ function bindUI() {
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) saveState();
+    else checkForUpdate();
   });
   window.addEventListener('pagehide', saveState);
 }
@@ -726,9 +731,39 @@ async function init() {
   renderAll();
   updateNowPlaying();
 
-  if ('serviceWorker' in navigator && window.isSecureContext) {
-    navigator.serviceWorker.register('sw.js').catch((e) => console.warn(e));
-  }
+  registerServiceWorker();
+}
+
+// ---------------------------------------------------------------- アプリ本体の更新
+
+let swRegistration = null;
+let updateReady = false;
+
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator) || !window.isSecureContext) return;
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+    .then((reg) => { swRegistration = reg; })
+    .catch((e) => console.warn(e));
+  // 新しい版の Service Worker が有効になったら読み込み直す（初回インストール時は除く）
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) return;
+    updateReady = true;
+    applyUpdate();
+  });
+}
+
+// ホーム画面のアプリは再読み込みされずに復帰することが多いため、前面に戻るたびに確認する
+function checkForUpdate() {
+  swRegistration?.update().catch(() => {});
+  applyUpdate();
+}
+
+// 再生中に読み込み直すと音が止まるので、停止中のときだけ反映する
+function applyUpdate() {
+  if (!updateReady || !audio.paused) return;
+  saveState();
+  location.reload();
 }
 
 init();

@@ -340,7 +340,7 @@ body.is-playing .eq i { animation: eq 0.9s ease-in-out infinite alternate; }
 .sheet-item.danger { color: var(--danger); }
 .sheet-item.cancel { border: 0; font-weight: 600; margin-top: 4px; }
 .sheet-item:disabled { color: var(--muted); opacity: 0.5; }
-.note { margin: 10px 8px; color: var(--muted); font-size: 12px; text-align: center; }
+.note { margin: 10px 8px; color: var(--muted); font-size: 12px; text-align: center; white-space: pre-line; }
 
 .sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; }
 .sheet-head h2 { margin: 0; font-size: 17px; }

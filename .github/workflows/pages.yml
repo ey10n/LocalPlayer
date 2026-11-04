@@ -1,0 +1,43 @@
+# main への push ごとに GitHub Pages へデプロイする。
+# その際、ファイル中の __BUILD__ をコミットID（7桁）に置き換える。
+# これにより sw.js の中身と各ファイルの URL（?v=...）が毎回変わり、
+# 利用者の端末で古いファイルが使い回されず、確実に新しい版へ切り替わる。
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stamp build ID
+        run: |
+          BUILD="${GITHUB_SHA::7}"
+          sed -i "s/__BUILD__/${BUILD}/g" index.html sw.js js/*.js
+          grep -c "${BUILD}" index.html sw.js js/app.js
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
